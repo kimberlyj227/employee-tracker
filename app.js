@@ -36,36 +36,38 @@ const start = async () => {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["View All Employees", "View all Employees By Department", "View All Employees by Manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager", "View All Roles", "Add Role", "Remove Role", "View All Departments", "Add Department", "Remove Department", "Quit"]
+        choices: ["View All Employees", "View all Employees By Department", "View All Employees by Manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager", "View All Roles", "Add Role", "Remove Role", "View All Departments", "Add Department", "Remove Department", "View Department Budget", "Quit"]
     });
 
     switch (action) {
-        case "View All Employees": //*done
+        case "View All Employees": 
             return viewAll();
-        case "View all Employees By Department": //*done
-            return viewEmployeeDept();
+        case "View all Employees By Department": 
+            return viewEmployeeDept(); 
         case "View All Employees by Manager":
             return viewAllManager();
-        case "Add Employee": //*done
+        case "Add Employee": 
             return addEmployee();
-        case "Remove Employee": //*done
+        case "Remove Employee": 
             return removeEmployee();
-        case "Update Employee Role": //*done
+        case "Update Employee Role": 
             return updateEmployee();
-        case "Update Employee Manager": //*done
+        case "Update Employee Manager": 
             return updateEmployeeManager();
-        case "View All Roles": //*done
+        case "View All Roles": 
             return viewAllRoles();
-        case "Add Role": //*done
+        case "Add Role": 
             return addRoles();
-        case "Remove Role": //*done
+        case "Remove Role": 
             return removeRoles();
-        case "View All Departments": //*done
+        case "View All Departments": 
             return viewAllDepartments();
-        case "Add Department": //*done
+        case "Add Department": 
             return addDepartment();
-        case "Remove Department": //* done
+        case "Remove Department": 
             return removeDepartment();
+        case "View Department Budget": 
+            return viewDeptBudget();    
         default:
             connection.end();
     };
@@ -365,6 +367,21 @@ const removeDepartment = async () => {
     )
 };
 // ? VIEW TOTAL BUDGET (COMBINED SALARIES OF EMPLOYEES IN A DEPARTMENT)
+const viewDeptBudget = async () => {
+    const { budget } = await inquirer.prompt({
+        type: "list",
+        name: "budget",
+        message: "Choose department to view budget",
+        choices: departments
+    });
+
+    connection.query("SELECT department_id, SUM(salary) salaryBudget FROM role INNER JOIN department ON role.department_id=department.id WHERE department_id = ?", [budget], (err, data) => {
+        if (err) throw err;
+        console.table(data);
+        start();
+    });
+}
+
 // ? UPDATE EMPLOYEE MANAGERS
 
 const updateEmployeeManager = async () => {
@@ -407,3 +424,24 @@ const updateEmployeeManager = async () => {
 
 // ? VIEW EMPLOYEES BY MANAGER
 
+const viewAllManager = async () => {
+    const {
+        manager
+    } = await
+    inquirer.prompt({
+        type: "list",
+        name: "manager",
+        message: "Choose Manager",
+        choices: employees
+    });
+
+    connection.query(`${mainQuery} WHERE employee.manager_id =?`, [manager], (err, data) => {
+        if (err) throw err;
+        if (data) {
+            console.table(data);
+        } else {
+            console.log("This employee is not a manager");
+        }
+        start();
+    });
+}
