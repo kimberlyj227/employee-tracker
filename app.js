@@ -22,7 +22,7 @@ connection.connect(err => {
 let employees = [];
 let roles = [];
 let departments = [];
-const mainQuery ="SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON department.id = role.department_id LEFT JOIN employee m ON m.id = employee.manager_id"
+const mainQuery = "SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON d.id = r.department_id LEFT JOIN employee m ON m.id = e.manager_id"
 
 // ------ FUNCTIONS AND INQUIRER PROMPTS --------
 // * START -------
@@ -36,38 +36,38 @@ const start = async () => {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["View All Employees", "View all Employees By Department", "View All Employees by Manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager", "View All Roles", "Add Role", "Remove Role", "View All Departments", "Add Department", "Remove Department", "View Department Budget", "Quit"]
+        choices: ["View All Employees", "View all Employees By Department", "View All Employees by Manager", "View All Roles", "View All Departments", "View Department Budget", "Add Employee", "Add Role", "Add Department", "Update Employee Role", "Update Employee Manager", "Remove Employee", "Remove Role", "Remove Department", "Quit"]
     });
 
     switch (action) {
-        case "View All Employees": 
+        case "View All Employees":
             return viewAll();
-        case "View all Employees By Department": 
-            return viewEmployeeDept(); 
+        case "View all Employees By Department":
+            return viewEmployeeDept();
         case "View All Employees by Manager":
             return viewAllManager();
-        case "Add Employee": 
+        case "Add Employee":
             return addEmployee();
-        case "Remove Employee": 
+        case "Remove Employee":
             return removeEmployee();
-        case "Update Employee Role": 
+        case "Update Employee Role":
             return updateEmployee();
-        case "Update Employee Manager": 
+        case "Update Employee Manager":
             return updateEmployeeManager();
-        case "View All Roles": 
+        case "View All Roles":
             return viewAllRoles();
-        case "Add Role": 
+        case "Add Role":
             return addRoles();
-        case "Remove Role": 
+        case "Remove Role":
             return removeRoles();
-        case "View All Departments": 
+        case "View All Departments":
             return viewAllDepartments();
-        case "Add Department": 
+        case "Add Department":
             return addDepartment();
-        case "Remove Department": 
+        case "Remove Department":
             return removeDepartment();
-        case "View Department Budget": 
-            return viewDeptBudget();    
+        case "View Department Budget":
+            return viewDeptBudget();
         default:
             connection.end();
     };
@@ -75,12 +75,17 @@ const start = async () => {
 
 // * COMPILE EMPLOYEE/ROLE LIST 
 const readEmployees = () => {
-    
+
     connection.query("SELECT * FROM employee", (err, data) => {
         if (err) throw err;
         // console.log(data);
-        employees = data.map(({id, first_name, last_name}) => ({
-            value: id, name: `${first_name} ${last_name}`
+        employees = data.map(({
+            id,
+            first_name,
+            last_name
+        }) => ({
+            value: id,
+            name: `${first_name} ${last_name}`
         }));
     })
 };
@@ -89,18 +94,28 @@ const readRoles = () => {
     const query = "SELECT * FROM role"
     connection.query(query, (err, data) => {
         if (err) throw err;
-        roles = data.map(({id, title, salary}) => ({
-            value: id, name: title, salary: salary
+        roles = data.map(({
+            id,
+            title,
+            salary
+        }) => ({
+            value: id,
+            name: title,
+            salary: salary
         }));
     })
 };
 
-const readDepartments = () =>{
+const readDepartments = () => {
     const query = "SELECT * FROM department"
     connection.query(query, (err, data) => {
         if (err) throw err;
-        departments = data.map(({id, name}) => ({
-            value: id, name: name
+        departments = data.map(({
+            id,
+            name
+        }) => ({
+            value: id,
+            name: name
         }));
     })
 }
@@ -214,9 +229,8 @@ const addDepartment = async () => {
 // * VIEW DEPARTMENTS/ROLES/EMPLOYEES
 
 const viewAll = () => {
-   connection.query(mainQuery, (err, data) => {
+    connection.query(mainQuery, (err, data) => {
         if (err) throw err;
-       
         console.table(data);
         start();
     })
@@ -233,7 +247,7 @@ const viewEmployeeDept = async () => {
         choices: departments
     });
 
-    connection.query(`${mainQuery} WHERE department.id =?`, [department], (err, data) => {
+    connection.query(`${mainQuery} WHERE d.id =?`, [department], (err, data) => {
         if (err) throw err;
         console.table(data);
         start();
@@ -262,42 +276,41 @@ const viewAllDepartments = async () => {
 
 const updateEmployee = async () => {
 
-   
-        const {
-            choice,
-            role_id,
-        } = await inquirer.prompt([{
-                type: "list",
-                message: "Which employee's role would you like to update?",
-                name: "choice",
-                choices: employees
+
+    const {
+        choice,
+        role_id,
+    } = await inquirer.prompt([{
+            type: "list",
+            message: "Which employee's role would you like to update?",
+            name: "choice",
+            choices: employees
+        },
+        {
+            type: "list",
+            message: "Choose the employee's new role.",
+            name: "role_id",
+            choices: roles
+
+        },
+
+    ]);
+
+    connection.query(
+        "UPDATE employee SET ? WHERE ?",
+        [{
+                role_id: role_id,
             },
             {
-                type: "list",
-                message: "Choose the employee's new role.",
-                name: "role_id",
-                choices: roles
-    
-            },
-
-        ]); 
-        
-        connection.query(
-            "UPDATE employee SET ? WHERE ?",
-            [{
-                    role_id: role_id,
-                },
-                {
-                    id: choice
-                }
-            ], (err) => {
-                if (err) throw err;
-                console.log(`You updated ${choice}'s role! \n`);
-                start();
+                id: choice
             }
-        )
+        ], (err) => {
+            if (err) throw err;
+            console.log(`You updated ${choice}'s role! \n`);
+            start();
+        }
+    )
 }
-
 
 // TODO--------- BONUS -----------
 // ? DELETE DEPARTMENTS/ROLES/EMPLOYEES
@@ -337,7 +350,7 @@ const removeRoles = async () => {
             id: title
         }, (err, data) => {
             if (err) throw err;
-            
+
             console.log(data.affectedRows + " successfully deleted \n")
             start();
         }
@@ -368,14 +381,16 @@ const removeDepartment = async () => {
 };
 // ? VIEW TOTAL BUDGET (COMBINED SALARIES OF EMPLOYEES IN A DEPARTMENT)
 const viewDeptBudget = async () => {
-    const { budget } = await inquirer.prompt({
+    const {
+        budget
+    } = await inquirer.prompt({
         type: "list",
         name: "budget",
         message: "Choose department to view budget",
         choices: departments
     });
 
-    connection.query("SELECT department_id, SUM(salary) salaryBudget FROM role INNER JOIN department ON role.department_id=department.id WHERE department_id = ?", [budget], (err, data) => {
+    connection.query("SELECT department_id, department.name AS department, SUM(salary) totalSalary FROM role INNER JOIN department ON role.department_id=department.id WHERE department_id = ?", [budget], (err, data) => {
         if (err) throw err;
         console.table(data);
         start();
@@ -386,7 +401,7 @@ const viewDeptBudget = async () => {
 
 const updateEmployeeManager = async () => {
 
-   
+
     const {
         choice,
         manager_id,
@@ -404,8 +419,8 @@ const updateEmployeeManager = async () => {
 
         },
 
-    ]); 
-    
+    ]);
+
     connection.query(
         "UPDATE employee SET ? WHERE ?",
         [{
@@ -435,7 +450,7 @@ const viewAllManager = async () => {
         choices: employees
     });
 
-    connection.query(`${mainQuery} WHERE employee.manager_id =?`, [manager], (err, data) => {
+    connection.query(`${mainQuery} WHERE e.manager_id =?`, [manager], (err, data) => {
         if (err) throw err;
         if (data) {
             console.table(data);
