@@ -382,17 +382,27 @@ const removeDepartment = async () => {
 // ? VIEW TOTAL BUDGET (COMBINED SALARIES OF EMPLOYEES IN A DEPARTMENT)
 const viewDeptBudget = async () => {
     const {
-        budget
+        departmentId
     } = await inquirer.prompt({
         type: "list",
-        name: "budget",
+        name: "departmentId",
         message: "Choose department to view budget",
         choices: departments
     });
 
-    connection.query("SELECT department_id, department.name AS department, SUM(salary) totalSalary FROM role INNER JOIN department ON role.department_id=department.id WHERE department_id = ?", [budget], (err, data) => {
+    connection.query("SELECT department_id, department.name AS department, employee.first_name, employee.last_name, salary FROM department INNER JOIN role ON department.id=role.department_id INNER JOIN employee ON role.id = employee.role_id WHERE department.id =?;", [departmentId], (err, data) => {
         if (err) throw err;
-        console.table(data);
+        
+        if (data.length > 0) {
+            let totalSalary = 0;
+            for (let i=0; i<data.length; i++) {
+                totalSalary += data[i].salary                
+            }
+            console.table(data);
+            console.log("Total Department Salary Budget: ", totalSalary, "\n");
+        } else {
+            console.log("This department has no employees assigned to it.")
+        }
         start();
     });
 }
